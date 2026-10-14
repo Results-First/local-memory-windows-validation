@@ -1,4 +1,4 @@
-name: UI preview Windows acceptance
+name: Evaluation update Windows acceptance
 on:
   workflow_dispatch:
 permissions:
@@ -21,14 +21,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download ui-preview-6dc74714 --repo "$env:GITHUB_REPOSITORY" --dir inputs
+          gh release download evaluation-7fe3bfe9 --repo "$env:GITHUB_REPOSITORY" --dir inputs
           if ($LASTEXITCODE -ne 0) { throw 'Draft input download failed' }
           $hash = (Get-FileHash inputs/stereo-fixture.wav -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($hash -ne '55ce4eddee6b08bbed3e9b7b3883e7a23a00a52332c87a987b536716bdd56c24') { throw 'Fixture hash mismatch' }
       - name: Run portable app with Windows PowerShell
         shell: powershell
         run: |
-          ./accept_windows.ps1 -Archive inputs/LocalMemory-UI-preview-Windows-x64.zip -ExpectedSha256 6dc747143e46aaf043e74cf0a4ed6d1d58d0d33a95d02550ef9344fd3fb0244b -Fixture inputs/stereo-fixture.wav -WorkDirectory "$env:RUNNER_TEMP/LocalMemory acceptance"
+          ./accept_windows.ps1 -Archive inputs/LocalMemory-evaluation-update-Windows-x64.zip -ExpectedSha256 7fe3bfe975f7413f951592dc57bfe388a3c87fc500a8dee32c33276b9524cc17 -Fixture inputs/stereo-fixture.wav -WorkDirectory "$env:RUNNER_TEMP/LocalMemory acceptance"
       - name: Print bounded evidence
         if: always()
         shell: pwsh
