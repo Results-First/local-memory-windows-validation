@@ -2,7 +2,8 @@ name: Separate Windows acceptance
 on:
   workflow_dispatch:
 permissions:
-  contents: read
+  # GitHub requires write access to see unpublished draft releases.
+  contents: write
 jobs:
   acceptance:
     strategy:
