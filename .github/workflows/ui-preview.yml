@@ -1,0 +1,39 @@
+name: UI preview Windows acceptance
+on:
+  workflow_dispatch:
+permissions:
+  # GitHub requires write access to see unpublished draft releases.
+  contents: write
+jobs:
+  acceptance:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Download unpublished evaluation inputs
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download ui-preview-6dc74714 --repo "$env:GITHUB_REPOSITORY" --dir inputs
+          if ($LASTEXITCODE -ne 0) { throw 'Draft input download failed' }
+          $hash = (Get-FileHash inputs/stereo-fixture.wav -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($hash -ne '55ce4eddee6b08bbed3e9b7b3883e7a23a00a52332c87a987b536716bdd56c24') { throw 'Fixture hash mismatch' }
+      - name: Run portable app with Windows PowerShell
+        shell: powershell
+        run: |
+          ./accept_windows.ps1 -Archive inputs/LocalMemory-UI-preview-Windows-x64.zip -ExpectedSha256 6dc747143e46aaf043e74cf0a4ed6d1d58d0d33a95d02550ef9344fd3fb0244b -Fixture inputs/stereo-fixture.wav -WorkDirectory "$env:RUNNER_TEMP/LocalMemory acceptance"
+      - name: Print bounded evidence
+        if: always()
+        shell: pwsh
+        run: |
+          $hostInfo = [ordered]@{runnerOS=$env:RUNNER_OS; runnerArch=$env:RUNNER_ARCH; imageOS=$env:ImageOS; imageVersion=$env:ImageVersion; runId=$env:GITHUB_RUN_ID; commit=$env:GITHUB_SHA; os=(Get-CimInstance Win32_OperatingSystem).Caption}
+          Write-Output ('HOST_RECEIPT=' + ($hostInfo | ConvertTo-Json -Compress))
+          $report = "$env:RUNNER_TEMP/LocalMemory acceptance/acceptance.json"
+          if (Test-Path -LiteralPath $report) { Write-Output ('ACCEPTANCE_RECEIPT=' + ((Get-Content -LiteralPath $report -Raw | ConvertFrom-Json) | ConvertTo-Json -Depth 15 -Compress)) }
