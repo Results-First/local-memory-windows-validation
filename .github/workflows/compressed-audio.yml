@@ -1,0 +1,37 @@
+name: Compressed audio Windows acceptance
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  acceptance:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+        format: [mp3, m4a]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Download candidate
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download audio-4263af5b --repo "$env:GITHUB_REPOSITORY" --dir inputs
+          if ($LASTEXITCODE -ne 0) { throw 'Download failed' }
+          $expected = @{mp3='82d55e3c25ea8d58a33e000e3ba8e1f5a5d74ae6e7ab28b10d976cfe23873874';m4a='34880878a418d83b3768c52ee1d02e0df20464a02d60d5f06f01ae649c1679d9'}
+          if ((Get-FileHash inputs/speech.${{ matrix.format }}).Hash.ToLower() -ne $expected['${{ matrix.format }}']) { throw 'Fixture mismatch' }
+      - name: Qualify compressed recording
+        shell: powershell
+        run: |
+          ./accept_windows.ps1 -Archive inputs/LocalMemory-free-MP3-M4A-Windows-x64.zip -ExpectedSha256 4263af5b2f23e7c51db2f30ca4d501dde9c9f174fbc045bffc75678c4ad47a7f -Fixture inputs/speech.${{ matrix.format }} -WorkDirectory "$env:RUNNER_TEMP/LocalMemory acceptance"
+      - name: Print evidence
+        if: always()
+        shell: pwsh
+        run: |
+          $p = "$env:RUNNER_TEMP/LocalMemory acceptance/acceptance.json"
+          if (Test-Path $p) { Write-Output ('ACCEPTANCE_RECEIPT=' + ((Get-Content $p -Raw | ConvertFrom-Json) | ConvertTo-Json -Depth 15 -Compress)) }

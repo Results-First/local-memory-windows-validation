@@ -37,7 +37,7 @@ try {
     Get-ChildItem -LiteralPath $payload -Recurse -File | ForEach-Object {
         $before[$_.FullName] = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash
     }
-    $copiedFixture = Join-Path $workPath 'qualification speech.wav'
+    $copiedFixture = Join-Path $workPath ('qualification speech' + [IO.Path]::GetExtension($fixturePath))
     Copy-Item -LiteralPath $fixturePath -Destination $copiedFixture
     foreach ($test in @('storage', 'audio')) {
         $output = Join-Path $workPath ($test + '.json')
